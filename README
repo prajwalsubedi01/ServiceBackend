@@ -1,0 +1,355 @@
+Service Booking API Documentation
+Base URL
+text:https:localhost:3000/api
+Authentication Endpoints
+1. Register Normal User
+POST /auth/register
+
+Register a new normal user account.
+
+Request Body (multipart/form-data):
+
+json
+{
+  "name": "string (required)",
+  "email": "string (required, valid email)",
+  "password": "string (required, min 6 characters)",
+  "profileImage": "file (optional, image)"
+}
+Response:
+
+json
+{
+  "message": "Registration successful. Verify your email.",
+  "user": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "role": "user"
+  }
+}
+
+2. Register Service Provider
+POST /auth/register-provider
+
+Register a new service provider account (requires admin approval).
+
+Request Body (multipart/form-data):
+
+json
+{
+  "name": "string (required)",
+  "email": "string (required, valid email)",
+  "password": "string (required, min 6 characters)",
+  "phone": "string (required, Nepali phone number)",
+  "address": "json string (required) - Example: {\"district\": \"birtamode\", \"fullAddress\": \"Full address here\", \"otherDistrict\": \"\"}",
+  "age": "number (required, min 18)",
+  "experience": "string (required)",
+  "profileImage": "file (optional, image)",
+  "experienceCertificate": "file (optional, image/pdf)",
+  "citizenshipFront": "file (required, image)",
+  "citizenshipBack": "file (required, image)",
+  "cv": "file (optional, image/pdf)"
+}
+Address District Options:
+
+javascript
+["birtamode", "laxmipur", "bhardrapur", "charali", "kakarvitta", "other"]
+Response:
+
+json
+{
+  "message": "Provider registration submitted. Verify your email and wait for admin approval.",
+  "user": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "role": "provider",
+    "providerStatus": "unapproved"
+  }
+}
+3. Login User
+POST /auth/login
+
+Login user and get access token.
+
+Request Body (application/json):
+
+json
+{
+  "email": "string (required)",
+  "password": "string (required)"
+}
+Response:
+
+json
+{
+  "accessToken": "string",
+  "user": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "role": "string",
+    "profileImage": {
+      "public_id": "string",
+      "url": "string"
+    },
+    "providerStatus": "string (only for providers)"
+  }
+}
+4. Verify Email
+GET /auth/verify-email/:token
+
+Verify user email address.
+
+Parameters:
+
+token: Email verification token sent to user's email
+
+Response:
+
+json
+{
+  "message": "Email verified successfully"
+}
+5. Refresh Token
+GET /auth/refresh-token
+
+Refresh access token using refresh token from cookies.
+
+Response:
+
+json
+{
+  "accessToken": "string"
+}
+6. Forgot Password
+POST /auth/forgot-password
+
+Request password reset email.
+
+Request Body (application/json):
+
+json
+{
+  "email": "string (required)"
+}
+Response:
+
+json
+{
+  "message": "Password reset email sent"
+}
+7. Reset Password
+PUT /auth/reset-password/:token
+
+Reset password using token from email.
+
+Parameters:
+
+token: Password reset token from email
+
+Request Body (application/json):
+
+json
+{
+  "password": "string (required, min 6 characters)"
+}
+Response:
+
+json
+{
+  "message": "Password reset successful"
+}
+Admin Endpoints
+8. Get Provider Applications
+GET /admin/providers
+
+Get all provider applications (Admin only).
+
+Headers:
+
+text
+Authorization: Bearer {accessToken}
+Query Parameters:
+
+status (optional): Filter by status - "unapproved", "approved", "rejected", "pending"
+
+page (optional): Page number (default: 1)
+
+limit (optional): Items per page (default: 10)
+
+Response:
+
+json
+{
+  "providers": [
+    {
+      "id": "string",
+      "name": "string",
+      "email": "string",
+      "role": "provider",
+      "isVerified": "boolean",
+      "profileImage": {
+        "public_id": "string",
+        "url": "string"
+      },
+      "providerProfile": {
+        "status": "string",
+        "phone": "string",
+        "address": {
+          "district": "string",
+          "otherDistrict": "string",
+          "fullAddress": "string"
+        },
+        "age": "number",
+        "experience": "string",
+        "experienceCertificate": {
+          "public_id": "string",
+          "url": "string"
+        },
+        "citizenship": {
+          "front": {
+            "public_id": "string",
+            "url": "string"
+          },
+          "back": {
+            "public_id": "string",
+            "url": "string"
+          }
+        },
+        "cv": {
+          "public_id": "string",
+          "url": "string"
+        },
+        "rejectionReason": "string",
+        "approvedAt": "date",
+        "approvedBy": "string"
+      },
+      "createdAt": "date",
+      "updatedAt": "date"
+    }
+  ],
+  "totalPages": "number",
+  "currentPage": "number",
+  "total": "number"
+}
+9. Get Single Provider Application
+GET /admin/providers/:id
+
+Get detailed information about a specific provider application.
+
+Headers:
+
+text
+Authorization: Bearer {accessToken}
+Parameters:
+
+id: User ID of the provider
+
+Response: Same as provider object in list above.
+
+10. Update Provider Status
+PUT /admin/providers/:id/status
+
+Approve or reject a provider application.
+
+Headers:
+
+text
+Authorization: Bearer {accessToken}
+Parameters:
+
+id: User ID of the provider
+
+Request Body (application/json):
+
+json
+{
+  "status": "string (required: 'approved', 'rejected', 'pending')",
+  "rejectionReason": "string (required if status is 'rejected')"
+}
+Response:
+
+json
+{
+  "message": "Provider application approved/rejected successfully",
+  "provider": {
+    "id": "string",
+    "name": "string",
+    "email": "string",
+    "status": "string"
+  }
+}
+User Roles and Status
+User Roles:
+user: Normal customer
+
+provider: Service provider
+
+admin: Administrator
+
+Provider Status:
+unapproved: New registration, pending review
+
+pending: Under review by admin
+
+approved: Approved and can offer services
+
+rejected: Application rejected
+
+Error Responses
+Common Error Formats:
+400 Bad Request:
+
+json
+{
+  "errors": [
+    {
+      "msg": "Validation error message",
+      "param": "fieldName",
+      "location": "body"
+    }
+  ]
+}
+401 Unauthorized:
+
+json
+{
+  "message": "Not authorized"
+}
+403 Forbidden:
+
+json
+{
+  "message": "Role not authorized"
+}
+404 Not Found:
+
+json
+{
+  "message": "Resource not found"
+}
+500 Internal Server Error:
+
+json
+{
+  "message": "Server error message"
+}
+File Upload Specifications
+Supported File Types:
+Images: PNG, JPG, JPEG, GIF
+
+Documents: PDF
+
+File Size Limit: 5MB per file
+Upload Fields for Provider Registration:
+profileImage (optional)
+
+experienceCertificate (optional)
+
+citizenshipFront (required)
+
+citizenshipBack (required)
+
+cv (optional)
